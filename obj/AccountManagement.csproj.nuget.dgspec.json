@@ -1,27 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "D:\\DotNet\\AccountManagement\\AccountManagement.csproj": {}
+    "D:\\.NET CORE\\Project\\DotNet\\AccountManagement.csproj": {}
   },
   "projects": {
-    "D:\\DotNet\\AccountManagement\\AccountManagement.csproj": {
+    "D:\\.NET CORE\\Project\\DotNet\\AccountManagement.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\DotNet\\AccountManagement\\AccountManagement.csproj",
+        "projectUniqueName": "D:\\.NET CORE\\Project\\DotNet\\AccountManagement.csproj",
         "projectName": "AccountManagement",
-        "projectPath": "D:\\DotNet\\AccountManagement\\AccountManagement.csproj",
-        "packagesPath": "C:\\Users\\PC\\.nuget\\packages\\",
-        "outputPath": "D:\\DotNet\\AccountManagement\\obj\\",
+        "projectPath": "D:\\.NET CORE\\Project\\DotNet\\AccountManagement.csproj",
+        "packagesPath": "C:\\Users\\Min\\.nuget\\packages\\",
+        "outputPath": "D:\\.NET CORE\\Project\\DotNet\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\PC\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Users\\Min\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net6.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -55,6 +53,10 @@
             "Microsoft.EntityFrameworkCore.Tools": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
+              "target": "Package",
+              "version": "[6.0.0, )"
+            },
+            "Pomelo.EntityFrameworkCore.MySql": {
               "target": "Package",
               "version": "[6.0.0, )"
             },
