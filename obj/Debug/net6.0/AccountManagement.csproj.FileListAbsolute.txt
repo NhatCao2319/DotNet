@@ -112,3 +112,21 @@ D:\.NET CORE\Project\DotNet\obj\Debug\net6.0\AccountManagement.dll
 D:\.NET CORE\Project\DotNet\obj\Debug\net6.0\ref\AccountManagement.dll
 D:\.NET CORE\Project\DotNet\obj\Debug\net6.0\AccountManagement.pdb
 D:\.NET CORE\Project\DotNet\obj\Debug\net6.0\AccountManagement.genruntimeconfig.cache
+D:\DotNet\AccountManagement\bin\Debug\net6.0\AccountManagement.staticwebassets.runtime.json
+D:\DotNet\AccountManagement\bin\Debug\net6.0\Humanizer.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\Microsoft.AspNetCore.Identity.UI.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.Design.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.Relational.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\Microsoft.IdentityModel.JsonWebTokens.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\Microsoft.IdentityModel.Logging.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\Microsoft.IdentityModel.Protocols.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\Microsoft.IdentityModel.Tokens.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\MySqlConnector.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\Pomelo.EntityFrameworkCore.MySql.dll
+D:\DotNet\AccountManagement\bin\Debug\net6.0\System.IdentityModel.Tokens.Jwt.dll
+D:\DotNet\AccountManagement\obj\Debug\net6.0\AccountManagement.csproj.AssemblyReference.cache

@@ -1,25 +1,27 @@
 {
   "format": 1,
   "restore": {
-    "D:\\.NET CORE\\Project\\DotNet\\AccountManagement.csproj": {}
+    "D:\\DotNet\\AccountManagement\\AccountManagement.csproj": {}
   },
   "projects": {
-    "D:\\.NET CORE\\Project\\DotNet\\AccountManagement.csproj": {
+    "D:\\DotNet\\AccountManagement\\AccountManagement.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\.NET CORE\\Project\\DotNet\\AccountManagement.csproj",
+        "projectUniqueName": "D:\\DotNet\\AccountManagement\\AccountManagement.csproj",
         "projectName": "AccountManagement",
-        "projectPath": "D:\\.NET CORE\\Project\\DotNet\\AccountManagement.csproj",
-        "packagesPath": "C:\\Users\\Min\\.nuget\\packages\\",
-        "outputPath": "D:\\.NET CORE\\Project\\DotNet\\obj\\",
+        "projectPath": "D:\\DotNet\\AccountManagement\\AccountManagement.csproj",
+        "packagesPath": "C:\\Users\\PC\\.nuget\\packages\\",
+        "outputPath": "D:\\DotNet\\AccountManagement\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Min\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\PC\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net6.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {

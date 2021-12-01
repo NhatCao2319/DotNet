@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DotNet.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
     public class AccountController : ControllerBase
     {
@@ -15,15 +14,24 @@ namespace DotNet.Controllers
             _context = context;
         }
 
-        // 
-        [HttpGet]
+        
+        [HttpGet("account/all")]
         public async Task<IActionResult> GetAccountList()
         {
             var items = await _context.Account.ToListAsync();
             return Ok(items);
         }
 
-        [HttpPost]
+        // Sort List Account
+        [HttpGet("account/sort")]
+        public async Task<IActionResult> GetSortedAccountList()
+        {
+            var items = await _context.Account.ToListAsync();
+            items.Sort();
+            return Ok(items);
+        }
+
+        [HttpPost("account/create")]
         public async Task<IActionResult> CreateAccount(Account data)
         {
             if (ModelState.IsValid)
@@ -31,13 +39,13 @@ namespace DotNet.Controllers
                 await _context.Account.AddAsync(data);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction("GetItem", new { data.Id }, data);
+                return CreatedAtAction("CreateAccount", new { data.Id }, data);
             }
 
             return new JsonResult("Something went wrong") { StatusCode = 500 };
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("account/{id}")]
         public async Task<IActionResult> GetAccount(int id)
         {
             var item = await _context.Account.FirstOrDefaultAsync(x => x.Id == id);
@@ -47,8 +55,42 @@ namespace DotNet.Controllers
 
             return Ok(item);
         }
+        
+        [HttpGet("account/byname/{fullname}")]
+        public async Task<IActionResult> GetAccountByName(string fullname)
+        {
+            //var item = await _context.Account.FindAsync(x => x.FullName.Contains(fullname));
+            var listAccount = await _context.Account.ToListAsync();
+            if (listAccount == null) return NotFound();
 
-        [HttpPut("{id}")]
+            listAccount = listAccount.Where(x => (x.FullName.Contains(fullname))).ToList();
+
+            return Ok(listAccount);
+        }
+
+        [HttpGet("account/byemail/{email}")]
+        public async Task<IActionResult> GetAccountByEmail(string email)
+        {
+            var item = await _context.Account.FirstOrDefaultAsync(x => x.Email == email);
+
+            if (item == null)
+                return NotFound();
+
+            return Ok(item);
+        }
+
+        [HttpGet("account/byphone/{phone}")]
+        public async Task<IActionResult> GetAccountByPhone(string phone)
+        {
+            var item = await _context.Account.FirstOrDefaultAsync(x => x.Phone == phone);
+
+            if (item == null)
+                return NotFound();
+
+            return Ok(item);
+        }
+
+        [HttpPut("account/{id}")]
         public async Task<IActionResult> UpdateItem(int id, Account account)
         {
             if (id != account.Id)
@@ -71,7 +113,7 @@ namespace DotNet.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("account/{id}")]
         public async Task<IActionResult> DeleteItem(int id)
         {
             var existItem = await _context.Account.FirstOrDefaultAsync(x => x.Id == id);
@@ -85,5 +127,18 @@ namespace DotNet.Controllers
             return Ok(existItem);
         }
 
+
+         [HttpGet("account/filter/{timemin}/{timemax}")]
+        public async Task<IActionResult> GetFilterByLastAccess(DateTime timemin,DateTime timemax)
+        {
+            var listAccount = await _context.Account.ToListAsync();
+         
+            listAccount = listAccount.Where(x => (x.LastAccess >= timemin && x.LastAccess <= timemax)).ToList();
+            return Ok(listAccount);
+            
+
+            
+        }
+        
     }
 }
