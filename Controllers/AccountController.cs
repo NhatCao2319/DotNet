@@ -3,8 +3,10 @@ using AccountManagement.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace DotNet.Controllers
 {
+    
     [ApiController]
     public class AccountController : ControllerBase
     {
@@ -14,36 +16,86 @@ namespace DotNet.Controllers
             _context = context;
         }
 
+      
         
         [HttpGet("account/all")]
         public async Task<IActionResult> GetAccountList()
         {
-            var items = await _context.Account.ToListAsync();
+            var items = await _context.Account.ToListAsync(); 
             return Ok(items);
         }
 
-        // Sort List Account
+        /* Sort List Account
         [HttpGet("account/sort")]
         public async Task<IActionResult> GetSortedAccountList()
         {
             var items = await _context.Account.ToListAsync();
-            items.Sort();
             return Ok(items);
         }
+        */
 
         [HttpPost("account/create")]
-        public async Task<IActionResult> CreateAccount(Account data)
+        public async Task<IActionResult> CreateAccount([FromForm]Account data, [FromForm]IFormFile file)
         {
+            var FileDic = "Files";
+            var fileName = "";
+            var fileExtension = "";
+            var FilePath = Path.Combine(Directory.GetCurrentDirectory(), FileDic);
+            var fullFilePath = "";
+           
+           
+            if (!Directory.Exists(FilePath))
+            {
+                Directory.CreateDirectory(FilePath);
+            }
+           
+
+
+            if (file != null)
+            {
+                if(file.Length > 0)
+                {
+                    fileName = file.Name;
+                    fileExtension = Path.GetExtension(file.FileName);
+                    var newFileName = String.Concat(fileName,fileExtension);
+
+                    fullFilePath = Path.Combine(FilePath,newFileName);
+
+                    using (FileStream fs = System.IO.File.Create(fullFilePath))
+                    {
+                        file.CopyTo(fs);
+                    }
+                }
+            }
+
+            data.Avatar = fullFilePath;
+           
             if (ModelState.IsValid)
             {
                 await _context.Account.AddAsync(data);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction("CreateAccount", new { data.Id }, data);
+                return Ok(data);
             }
 
             return new JsonResult("Something went wrong") { StatusCode = 500 };
         }
+
+        /*
+        private byte[] GetImage(string sBase64)
+        {
+            byte[] bytes = null;
+            if (!string.IsNullOrEmpty(sBase64))
+            {
+                bytes = Convert.FromBase64String(sBase64);
+            }
+            else
+            {
+                return null;
+            }
+            return bytes;
+        }
+        */
 
         [HttpGet("account/{id}")]
         public async Task<IActionResult> GetAccount(int id)
@@ -52,6 +104,8 @@ namespace DotNet.Controllers
 
             if (item == null)
                 return NotFound();
+
+            //item.Avatar = this.GetImage(Convert.ToBase64String(item.Avatar));
 
             return Ok(item);
         }
