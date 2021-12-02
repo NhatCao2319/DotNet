@@ -2,7 +2,7 @@ using AccountManagement.Data;
 using AccountManagement.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
+using System.Text.RegularExpressions;
 
 namespace DotNet.Controllers
 {
@@ -38,37 +38,30 @@ namespace DotNet.Controllers
         public async Task<IActionResult> CreateAccount([FromForm]Account data, [FromForm]IFormFile file)
         {
             var FileDic = "Files";
-            var fileName = "";
-            var fileExtension = "";
             var FilePath = Path.Combine(Directory.GetCurrentDirectory(), FileDic);
-            var fullFilePath = "";
-           
-           
+                      
             if (!Directory.Exists(FilePath))
             {
                 Directory.CreateDirectory(FilePath);
             }
            
-
-
             if (file != null)
             {
                 if(file.Length > 0)
                 {
-                    fileName = file.Name;
-                    fileExtension = Path.GetExtension(file.FileName);
-                    var newFileName = String.Concat(fileName,fileExtension);
-
-                    fullFilePath = Path.Combine(FilePath,newFileName);
+                    var RandomFileName = new Random().Next() + "_" + Regex.Replace(file.FileName.Trim(), @"[^a-zA-Z0-9.]", "");
+                    var fullFilePath = Path.Combine(FilePath, RandomFileName);
 
                     using (FileStream fs = System.IO.File.Create(fullFilePath))
                     {
                         file.CopyTo(fs);
                     }
+
+                    data.Avatar = fullFilePath;
                 }
             }
 
-            data.Avatar = fullFilePath;
+            
            
             if (ModelState.IsValid)
             {
