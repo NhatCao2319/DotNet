@@ -1,19 +1,32 @@
+using AccountManagement.Configuration;
 using AccountManagement.Data;
 using AccountManagement.Models;
+using AccountManagement.Models.DTOs.Responses;
+using AccountManager.Models.DTOs.Request;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace DotNet.Controllers
 {
     
     [ApiController]
+
     public class AccountController : ControllerBase
     {
+        private readonly JwtConfig _jwtConfig;
         private readonly ApiDbContext _context;
-        public AccountController(ApiDbContext context)
+        public AccountController(ApiDbContext context, IOptionsMonitor<JwtConfig> optionsMonitor)
         {
             _context = context;
+            _jwtConfig = optionsMonitor.CurrentValue;
         }
 
       
@@ -60,7 +73,7 @@ namespace DotNet.Controllers
                     data.Avatar = fullFilePath;
                 }
             }
-
+    
             
            
             if (ModelState.IsValid)
@@ -74,22 +87,82 @@ namespace DotNet.Controllers
             return new JsonResult("Something went wrong") { StatusCode = 500 };
         }
 
-        /*
-        private byte[] GetImage(string sBase64)
-        {
-            byte[] bytes = null;
-            if (!string.IsNullOrEmpty(sBase64))
-            {
-                bytes = Convert.FromBase64String(sBase64);
-            }
-            else
-            {
-                return null;
-            }
-            return bytes;
-        }
-        */
 
+        [HttpPost]
+        [Route("Login")]
+        public async Task<IActionResult> Login([FromBody] AccountLoginDto user) // AccountLoginRequest request
+        {
+            if (ModelState.IsValid)
+            {
+                
+                var items = await _context.Account.FirstOrDefaultAsync(x => x.Email == user.Email);
+
+                if (items == null)
+                {
+                    return BadRequest(new RegistrationResponse()
+                    {
+                        Errors = new List<string>() {
+                                "Invalid login request"
+                            },
+                        Success = false
+                    });
+                }
+
+               var existAcc =  await _context.Account.FirstOrDefaultAsync(x => (x.Email == items.Email && x.Password == items.Password));
+
+                if (existAcc == null)
+                {
+                    return BadRequest(new RegistrationResponse()
+                    {
+                        Errors = new List<string>() {
+                                "Invalid login request"
+                            },
+                        Success = false
+                    });
+                }
+
+                var jwtToken = GenerateJwtToken(existAcc);
+
+                return Ok(new RegistrationResponse()
+                {
+                    Success = true,
+                    Token = jwtToken
+                });
+            }
+
+            return BadRequest(new RegistrationResponse()
+            {
+                Errors = new List<string>() {
+                        "Invalid payload"
+                    },
+                Success = false
+            });
+        }
+
+        private string GenerateJwtToken(Account user)
+        {
+            var jwtTokenHandler = new JwtSecurityTokenHandler();
+
+            var key = Encoding.ASCII.GetBytes(_jwtConfig.Secret);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                    new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                }),
+                Expires = DateTime.UtcNow.AddHours(6),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = jwtTokenHandler.CreateToken(tokenDescriptor);
+            var jwtToken = jwtTokenHandler.WriteToken(token);
+
+            return jwtToken;
+        }
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("account/{id}")]
         public async Task<IActionResult> GetAccount(int id)
         {

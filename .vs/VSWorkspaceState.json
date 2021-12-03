@@ -2,8 +2,12 @@
   "ExpandedNodes": [
     "",
     "\\Controllers",
-    "\\Migrations"
+    "\\Data",
+    "\\Models",
+    "\\Models\\DTOs",
+    "\\Models\\DTOs\\Requests",
+    "\\Models\\DTOs\\Responses"
   ],
-  "SelectedNode": "\\Program.cs",
+  "SelectedNode": "\\Models\\DTOs\\Requests\\AccountLoginDto.cs",
   "PreviewInSolutionExplorer": false
 }

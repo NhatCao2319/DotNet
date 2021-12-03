@@ -1,14 +1,15 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace AccountManagement.Models.DTOs.Requests
+namespace AccountManager.Models.DTOs.Request
 {
-    public class AccountRegistrationDto
+    public class AccountLoginDto
     {
         [Required]
         [EmailAddress]
         public string? Email { get; set; }
         [Required]
-        public string Password { get; set; }
-      
+        public string? Password { get; set; }
+
+
     }
 }

@@ -2213,11 +2213,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\DotNet\\AccountManagement\\AccountManagement.csproj",
+      "projectUniqueName": "D:\\Dotnet\\Nguyen\\AccountManager\\AccountManagement.csproj",
       "projectName": "AccountManagement",
-      "projectPath": "D:\\DotNet\\AccountManagement\\AccountManagement.csproj",
+      "projectPath": "D:\\Dotnet\\Nguyen\\AccountManager\\AccountManagement.csproj",
       "packagesPath": "C:\\Users\\PC\\.nuget\\packages\\",
-      "outputPath": "D:\\DotNet\\AccountManagement\\obj\\",
+      "outputPath": "D:\\Dotnet\\Nguyen\\AccountManager\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\PC\\AppData\\Roaming\\NuGet\\NuGet.Config",
