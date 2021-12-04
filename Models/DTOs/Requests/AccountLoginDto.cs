@@ -4,9 +4,9 @@ namespace AccountManager.Models.DTOs.Request
 {
     public class AccountLoginDto
     {
-        [Required]
-        [EmailAddress]
+      
         public string? Email { get; set; }
+        public string? Phone { get; set; }
         [Required]
         public string? Password { get; set; }
 

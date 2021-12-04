@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AccountManagement.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    [Migration("20211202080326_Init BD")]
-    partial class InitBD
+    [Migration("20211203091858_Init DB")]
+    partial class InitDB
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -38,7 +38,7 @@ namespace AccountManagement.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("LastAccess")
+                    b.Property<DateTime?>("LastAccess")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Password")

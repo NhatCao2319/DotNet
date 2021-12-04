@@ -174,3 +174,6 @@ D:\Dotnet\Nguyen\AccountManager\obj\Debug\net6.0\staticwebassets.development.jso
 D:\Dotnet\Nguyen\AccountManager\obj\Debug\net6.0\scopedcss\bundle\AccountManagement.styles.css
 D:\Dotnet\Nguyen\AccountManager\obj\Debug\net6.0\AccountManagement.csproj.CopyComplete
 D:\Dotnet\Nguyen\AccountManager\obj\Debug\net6.0\AccountManagement.genruntimeconfig.cache
+D:\Dotnet\Nguyen\AccountManager\bin\Debug\net6.0\AutoMapper.dll
+D:\Dotnet\Nguyen\AccountManager\bin\Debug\net6.0\AutoMapper.Extensions.Microsoft.DependencyInjection.dll
+D:\Dotnet\Nguyen\AccountManager\bin\Debug\net6.0\BCrypt.Net-Next.dll

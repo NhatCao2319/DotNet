@@ -36,7 +36,7 @@ namespace AccountManagement.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("LastAccess")
+                    b.Property<DateTime?>("LastAccess")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Password")

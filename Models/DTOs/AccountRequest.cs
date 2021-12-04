@@ -1,10 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace AccountManagement.Models
+namespace AccountManagement.Models.DTOs
 {
-    public class Account
+    public class AccountRequest
     {
-        public int Id { get; set; }
         [Required]
         public string? FullName { get; set; }
         [Required]
@@ -15,8 +14,9 @@ namespace AccountManagement.Models
         public string? Phone { get; set; }
         [Required]
         public string Password { get; set; }
-        public string? Avatar { get; set; }
-        public DateTime? LastAccess { get; set; }
+        public IFormFile? Avatar { get; set; }
+        //public DateTime LastAccess { get; set; }
+
 
     }
 }

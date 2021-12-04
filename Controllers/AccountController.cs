@@ -1,8 +1,10 @@
 using AccountManagement.Configuration;
 using AccountManagement.Data;
 using AccountManagement.Models;
+using AccountManagement.Models.DTOs;
 using AccountManagement.Models.DTOs.Responses;
 using AccountManager.Models.DTOs.Request;
+using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,80 +15,26 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.RegularExpressions;
+using BCrypt.Net;
+using AccountManagement;
 
 namespace DotNet.Controllers
 {
     
     [ApiController]
+    
 
     public class AccountController : ControllerBase
     {
+        private readonly IMapper _mapper;
         private readonly JwtConfig _jwtConfig;
         private readonly ApiDbContext _context;
-        public AccountController(ApiDbContext context, IOptionsMonitor<JwtConfig> optionsMonitor)
+        public AccountController(ApiDbContext context, IOptionsMonitor<JwtConfig> optionsMonitor, IMapper mapper)
         {
             _context = context;
             _jwtConfig = optionsMonitor.CurrentValue;
+            _mapper = mapper;
         }
-
-      
-        
-        [HttpGet("account/all")]
-        public async Task<IActionResult> GetAccountList()
-        {
-            var items = await _context.Account.ToListAsync(); 
-            return Ok(items);
-        }
-
-        /* Sort List Account
-        [HttpGet("account/sort")]
-        public async Task<IActionResult> GetSortedAccountList()
-        {
-            var items = await _context.Account.ToListAsync();
-            return Ok(items);
-        }
-        */
-
-        [HttpPost("account/create")]
-        public async Task<IActionResult> CreateAccount([FromForm]Account data, [FromForm]IFormFile file)
-        {
-            var FileDic = "Files";
-            var FilePath = Path.Combine(Directory.GetCurrentDirectory(), FileDic);
-                      
-            if (!Directory.Exists(FilePath))
-            {
-                Directory.CreateDirectory(FilePath);
-            }
-           
-            if (file != null)
-            {
-                if(file.Length > 0)
-                {
-                    var RandomFileName = new Random().Next() + "_" + Regex.Replace(file.FileName.Trim(), @"[^a-zA-Z0-9.]", "");
-                    var fullFilePath = Path.Combine(FilePath, RandomFileName);
-
-                    using (FileStream fs = System.IO.File.Create(fullFilePath))
-                    {
-                        file.CopyTo(fs);
-                    }
-
-                    data.Avatar = fullFilePath;
-                }
-            }
-    
-            
-           
-            if (ModelState.IsValid)
-            {
-                await _context.Account.AddAsync(data);
-                await _context.SaveChangesAsync();
-
-                return Ok(data);
-            }
-
-            return new JsonResult("Something went wrong") { StatusCode = 500 };
-        }
-
 
         [HttpPost]
         [Route("Login")]
@@ -94,10 +42,10 @@ namespace DotNet.Controllers
         {
             if (ModelState.IsValid)
             {
-                
-                var items = await _context.Account.FirstOrDefaultAsync(x => x.Email == user.Email);
 
-                if (items == null)
+                Account acc = await _context.Account.FirstOrDefaultAsync(x => x.Email == user.Email || x.Phone == user.Phone);
+
+                if (acc == null)
                 {
                     return BadRequest(new RegistrationResponse()
                     {
@@ -108,9 +56,10 @@ namespace DotNet.Controllers
                     });
                 }
 
-               var existAcc =  await _context.Account.FirstOrDefaultAsync(x => (x.Email == items.Email && x.Password == items.Password));
+                bool isValidPass = BCrypt.Net.BCrypt.Verify(user.Password, acc.Password);
 
-                if (existAcc == null)
+
+                if (isValidPass == false)
                 {
                     return BadRequest(new RegistrationResponse()
                     {
@@ -121,7 +70,9 @@ namespace DotNet.Controllers
                     });
                 }
 
-                var jwtToken = GenerateJwtToken(existAcc);
+                var jwtToken = GenerateJwtToken(acc);
+                await UpdateLastAccess(acc);
+
 
                 return Ok(new RegistrationResponse()
                 {
@@ -138,6 +89,89 @@ namespace DotNet.Controllers
                 Success = false
             });
         }
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("account/all")]
+        public async Task<IActionResult> GetAccountList([FromQuery]int pageIndex,[FromQuery] int pageSize)
+        {
+            IQueryable<Account> list =  _context.Account.AsQueryable();
+            PaginatedList<Account> items = await PaginatedList<Account>.CreateAsync(list, pageIndex,pageSize);
+            //PaginatedList<Account> items = PaginatedList<Account>.Create(_context.Account.ToList(), pageIndex, pageSize);
+            return Ok(items);
+        }
+
+        //Sort List Account
+        [HttpGet("account/sort")]
+        public async Task<IActionResult> GetSortedAccountList()
+        {
+            List<Account> items = await _context.Account.ToListAsync();
+            List<Account> SortItems = items.OrderBy(x => x.FullName).ToList();
+            return Ok(SortItems);
+        }
+        
+
+        [HttpPost("account/create")]
+        public async Task<IActionResult> CreateAccount([FromForm]AccountRequest data)
+        {
+            var FileDic = "Files";
+            var FilePath = Path.Combine("", FileDic);
+            var AvatarPath = "";
+                      
+            if (!Directory.Exists(FilePath))
+            {
+                Directory.CreateDirectory(FilePath);
+            }
+           
+            if (data.Avatar != null)
+            {
+                if(data.Avatar.Length > 0)
+                {
+                    var RandomFileName = new Random().Next() + "_" + Regex.Replace(data.Avatar.FileName.Trim(), @"[^a-zA-Z0-9.]", "");
+                    var fullFilePath = Path.Combine(FilePath, RandomFileName);
+
+                    using (FileStream fs = System.IO.File.Create(fullFilePath))
+                    {
+                        data.Avatar.CopyTo(fs);
+                    }
+                    AvatarPath = fullFilePath;
+                }
+            }
+    
+            
+           
+            if (ModelState.IsValid)
+            {
+               // AccountRequest accountRe = _mapper.Map<AccountRequest>(data);
+                Account account = _mapper.Map<Account>(data);
+                account.Avatar = AvatarPath;
+                account.Password = BCrypt.Net.BCrypt.HashPassword(data.Password);
+               
+                await _context.Account.AddAsync(account);
+
+                await _context.SaveChangesAsync();
+
+                return Ok(account);
+            }
+
+            return new JsonResult("Something went wrong") { StatusCode = 500 };
+        }
+
+
+        
+
+
+        private async Task<IActionResult> UpdateLastAccess(Account account)
+        {
+            if (account == null)
+                return BadRequest();
+
+            account.LastAccess = DateTime.Now;
+
+            // Implement the changes on the database level
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
 
         private string GenerateJwtToken(Account user)
         {
@@ -162,28 +196,29 @@ namespace DotNet.Controllers
 
             return jwtToken;
         }
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("account/{id}")]
         public async Task<IActionResult> GetAccount(int id)
         {
-            var item = await _context.Account.FirstOrDefaultAsync(x => x.Id == id);
+            Account acc = await _context.Account.FirstOrDefaultAsync(x => x.Id == id);
 
-            if (item == null)
+            if (acc == null)
                 return NotFound();
 
-            //item.Avatar = this.GetImage(Convert.ToBase64String(item.Avatar));
-
-            return Ok(item);
+            return Ok(acc);
         }
         
-        [HttpGet("account/byname/{fullname}")]
-        public async Task<IActionResult> GetAccountByName(string fullname)
+        [HttpGet("account/search/{key}")]
+        public async Task<IActionResult> GetAccountByName(string key)
         {
-            //var item = await _context.Account.FindAsync(x => x.FullName.Contains(fullname));
-            var listAccount = await _context.Account.ToListAsync();
+            List<Account> listAccount = await _context.Account.ToListAsync();
             if (listAccount == null) return NotFound();
 
-            listAccount = listAccount.Where(x => (x.FullName.Contains(fullname))).ToList();
+            listAccount = listAccount.Where(acc => (acc.FullName!.ToLower().Contains(key.ToLower())) 
+            || (acc.Email!.ToLower().Contains(key.ToLower()))
+            || (acc.Phone!.Contains(key))
+            || (acc.Id.ToString()! == key)
+            ).ToList();
 
             return Ok(listAccount);
         }
@@ -248,16 +283,14 @@ namespace DotNet.Controllers
         }
 
 
-         [HttpGet("account/filter/{timemin}/{timemax}")]
-        public async Task<IActionResult> GetFilterByLastAccess(DateTime timemin,DateTime timemax)
+         [HttpGet("account/filter")]
+        public async Task<IActionResult> GetFilterByLastAccess([FromQuery]DateTime timemin,[FromQuery]DateTime timemax)
         {
             var listAccount = await _context.Account.ToListAsync();
          
             listAccount = listAccount.Where(x => (x.LastAccess >= timemin && x.LastAccess <= timemax)).ToList();
             return Ok(listAccount);
-            
-
-            
+         
         }
         
     }
