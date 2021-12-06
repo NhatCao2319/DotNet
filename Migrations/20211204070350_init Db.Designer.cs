@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AccountManagement.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    [Migration("20211203091858_Init DB")]
-    partial class InitDB
+    [Migration("20211204070350_init Db")]
+    partial class initDb
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -47,6 +47,9 @@ namespace AccountManagement.Migrations
 
                     b.Property<string>("Phone")
                         .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Role")
                         .HasColumnType("longtext");
 
                     b.HasKey("Id");

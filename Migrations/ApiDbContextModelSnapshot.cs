@@ -47,6 +47,9 @@ namespace AccountManagement.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<string>("Role")
+                        .HasColumnType("longtext");
+
                     b.HasKey("Id");
 
                     b.ToTable("Account");

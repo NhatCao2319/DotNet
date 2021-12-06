@@ -35,11 +35,12 @@ namespace DotNet.Controllers
             _jwtConfig = optionsMonitor.CurrentValue;
             _mapper = mapper;
         }
-
+        
         [HttpPost]
         [Route("Login")]
+        [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] AccountLoginDto user) // AccountLoginRequest request
-        {
+        { 
             if (ModelState.IsValid)
             {
 
@@ -71,6 +72,10 @@ namespace DotNet.Controllers
                 }
 
                 var jwtToken = GenerateJwtToken(acc);
+               
+
+
+
                 await UpdateLastAccess(acc);
 
 
@@ -89,7 +94,8 @@ namespace DotNet.Controllers
                 Success = false
             });
         }
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        
+        
         [HttpGet("account/all")]
         public async Task<IActionResult> GetAccountList([FromQuery]int pageIndex,[FromQuery] int pageSize)
         {
@@ -100,6 +106,7 @@ namespace DotNet.Controllers
         }
 
         //Sort List Account
+        [Authorize(Roles = "Admin")]
         [HttpGet("account/sort")]
         public async Task<IActionResult> GetSortedAccountList()
         {
@@ -110,11 +117,12 @@ namespace DotNet.Controllers
         
 
         [HttpPost("account/create")]
+        [AllowAnonymous]
         public async Task<IActionResult> CreateAccount([FromForm]AccountRequest data)
         {
-            var FileDic = "Files";
-            var FilePath = Path.Combine("", FileDic);
-            var AvatarPath = "";
+            string FileDic = "Files";
+            string FilePath = Path.Combine("", FileDic);
+            string AvatarPath = "";
                       
             if (!Directory.Exists(FilePath))
             {
@@ -125,8 +133,8 @@ namespace DotNet.Controllers
             {
                 if(data.Avatar.Length > 0)
                 {
-                    var RandomFileName = new Random().Next() + "_" + Regex.Replace(data.Avatar.FileName.Trim(), @"[^a-zA-Z0-9.]", "");
-                    var fullFilePath = Path.Combine(FilePath, RandomFileName);
+                    string RandomFileName = new Random().Next() + "_" + Regex.Replace(data.Avatar.FileName.Trim(), @"[^a-zA-Z0-9.]", "");
+                    string fullFilePath = Path.Combine(FilePath, RandomFileName);
 
                     using (FileStream fs = System.IO.File.Create(fullFilePath))
                     {
@@ -155,9 +163,33 @@ namespace DotNet.Controllers
             return new JsonResult("Something went wrong") { StatusCode = 500 };
         }
 
+        private string getFilePath(IFormFile file)
+        {
+            string FileDic = "Files";
+            string FilePath = Path.Combine("", FileDic);
+            string AvatarPath = "";
 
-        
+            if (!Directory.Exists(FilePath))
+            {
+                Directory.CreateDirectory(FilePath);
+            }
 
+            if (file != null)
+            {
+                if (file.Length > 0)
+                {
+                    string RandomFileName = new Random().Next() + "_" + Regex.Replace(file.FileName, @"[^a-zA-Z0-9.]", "");
+                    string fullFilePath = Path.Combine(FilePath, RandomFileName);
+
+                    using (FileStream fs = System.IO.File.Create(fullFilePath))
+                    {
+                        file.CopyTo(fs);
+                    }
+                    AvatarPath = fullFilePath;
+                }
+            }
+            return AvatarPath;
+        }
 
         private async Task<IActionResult> UpdateLastAccess(Account account)
         {
@@ -183,11 +215,13 @@ namespace DotNet.Controllers
             {
                 Subject = new ClaimsIdentity(new[]
                 {
+                    new Claim("Id", user.Id.ToString()),
                     new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                    new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+                    new Claim(JwtRegisteredClaimNames.Sub, user.Phone),
+                    new Claim(ClaimTypes.Role,"Admin","User"),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
                 }),
-                Expires = DateTime.UtcNow.AddHours(6),
+                Expires = DateTime.UtcNow.AddSeconds(30),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
@@ -197,6 +231,7 @@ namespace DotNet.Controllers
             return jwtToken;
         }
         //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [Authorize(Roles = "Admin")]
         [HttpGet("account/{id}")]
         public async Task<IActionResult> GetAccount(int id)
         {
@@ -207,7 +242,7 @@ namespace DotNet.Controllers
 
             return Ok(acc);
         }
-        
+        [Authorize(Roles = "Admin")]
         [HttpGet("account/search/{key}")]
         public async Task<IActionResult> GetAccountByName(string key)
         {
@@ -222,71 +257,85 @@ namespace DotNet.Controllers
 
             return Ok(listAccount);
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpGet("account/byemail/{email}")]
         public async Task<IActionResult> GetAccountByEmail(string email)
         {
-            var item = await _context.Account.FirstOrDefaultAsync(x => x.Email == email);
+            Account account = await _context.Account.FirstOrDefaultAsync(x => x.Email == email);
 
-            if (item == null)
+            if (account == null)
                 return NotFound();
 
-            return Ok(item);
+            return Ok(account);
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpGet("account/byphone/{phone}")]
         public async Task<IActionResult> GetAccountByPhone(string phone)
         {
-            var item = await _context.Account.FirstOrDefaultAsync(x => x.Phone == phone);
+            Account account = await _context.Account.FirstOrDefaultAsync(x => x.Phone == phone);
 
-            if (item == null)
+            if (account == null)
                 return NotFound();
 
-            return Ok(item);
+            return Ok(account);
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpPut("account/{id}")]
         public async Task<IActionResult> UpdateItem(int id, Account account)
         {
             if (id != account.Id)
                 return BadRequest();
 
-            var existItem = await _context.Account.FirstOrDefaultAsync(x => x.Id == id);
+            Account existAccount = await _context.Account.FirstOrDefaultAsync(x => x.Id == id);
 
-            if (existItem == null)
+            if (existAccount == null)
                 return NotFound();
 
-            existItem.FullName = account.FullName;
-            existItem.Email = account.Email;
-            existItem.Phone = account.Phone;
-            existItem.Avatar = account.Avatar;
-            existItem.LastAccess = account.LastAccess;
+            existAccount.FullName = account.FullName;
+            existAccount.Email = account.Email;
+            existAccount.Phone = account.Phone;
+            existAccount.Avatar = account.Avatar;
+            existAccount.LastAccess = account.LastAccess;
 
             // Implement the changes on the database level
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok(existAccount);
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpDelete("account/{id}")]
         public async Task<IActionResult> DeleteItem(int id)
         {
-            var existItem = await _context.Account.FirstOrDefaultAsync(x => x.Id == id);
+            Account existAccount = await _context.Account.FirstOrDefaultAsync(x => x.Id == id);
 
-            if (existItem == null)
+            if (existAccount == null)
                 return NotFound();
 
-            _context.Account.Remove(existItem);
+            _context.Account.Remove(existAccount);
             await _context.SaveChangesAsync();
 
-            return Ok(existItem);
+            return Ok(existAccount);
         }
 
+        [Authorize(Roles = "Admin,User")]
+        [HttpPatch("account/update/avatar")]
+        public async Task<IActionResult> UpdateAvatar(IFormFile file)
+        {
+            // get value from header
+            string id = HttpContext.User.FindFirstValue("Id");
+           Account acc = await _context.Account.FirstOrDefaultAsync(x => x.Id.ToString() == id);
+           acc.Avatar = getFilePath(file);
+           await _context.SaveChangesAsync();
 
-         [HttpGet("account/filter")]
+            return Ok(acc);
+
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("account/filter")]
         public async Task<IActionResult> GetFilterByLastAccess([FromQuery]DateTime timemin,[FromQuery]DateTime timemax)
         {
-            var listAccount = await _context.Account.ToListAsync();
+            List<Account> listAccount = await _context.Account.ToListAsync();
          
             listAccount = listAccount.Where(x => (x.LastAccess >= timemin && x.LastAccess <= timemax)).ToList();
             return Ok(listAccount);

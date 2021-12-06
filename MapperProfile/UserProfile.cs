@@ -10,10 +10,9 @@ namespace AccountManagement.MapperProfile
         {
             CreateMap<AccountRequest, Account>()
                 .ForMember(dest => dest.Avatar,
-                opt => opt.Ignore())
-
-                .ForMember(dest => dest.LastAccess,
                 opt => opt.Ignore());
+
+   
         }
     }
 }
