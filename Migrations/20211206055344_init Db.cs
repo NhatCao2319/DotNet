@@ -31,7 +31,8 @@ namespace AccountManagement.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Avatar = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    LastAccess = table.Column<DateTime>(type: "datetime(6)", nullable: true)
+                    LastAccess = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    DateCreate = table.Column<DateTime>(type: "datetime(6)", nullable: false)
                 },
                 constraints: table =>
                 {

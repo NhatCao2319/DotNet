@@ -28,6 +28,9 @@ namespace AccountManagement.Migrations
                     b.Property<string>("Avatar")
                         .HasColumnType("longtext");
 
+                    b.Property<DateTime>("DateCreate")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("longtext");

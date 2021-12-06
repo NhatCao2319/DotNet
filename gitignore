@@ -18,6 +18,9 @@ slnx.sqlite
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+# Migrations
+.Migrations/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/

@@ -23,7 +23,7 @@ var tokenValidationParams = new TokenValidationParameters
 
 // Add services to the container.
 
-    string connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+string connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.Configure<JwtConfig>(builder.Configuration.GetSection("JwtConfig")); 
 builder.Services.AddDbContext<ApiDbContext>(options =>
                 options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
@@ -34,6 +34,12 @@ builder.Services.AddDbContext<ApiDbContext>(options =>
                 .EnableSensitiveDataLogging()
                 .EnableDetailedErrors()
                 );
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Role",
+        policy => policy.RequireRole("Admin","User"));
+   
+});
 
 builder.Services.AddAuthentication(options => {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

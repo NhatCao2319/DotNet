@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AccountManagement.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    [Migration("20211204070350_init Db")]
+    [Migration("20211206055344_init Db")]
     partial class initDb
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -29,6 +29,9 @@ namespace AccountManagement.Migrations
 
                     b.Property<string>("Avatar")
                         .HasColumnType("longtext");
+
+                    b.Property<DateTime>("DateCreate")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Email")
                         .IsRequired()

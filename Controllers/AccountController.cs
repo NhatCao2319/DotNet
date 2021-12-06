@@ -17,6 +17,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using BCrypt.Net;
 using AccountManagement;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
+using AccountManagement.Models.DTOs.Requests;
 
 namespace DotNet.Controllers
 {
@@ -39,13 +42,14 @@ namespace DotNet.Controllers
         [HttpPost]
         [Route("Login")]
         [AllowAnonymous]
-        public async Task<IActionResult> Login([FromBody] AccountLoginDto user) // AccountLoginRequest request
+        public async Task<IActionResult> Login([FromForm] AccountLoginDto user) // AccountLoginRequest request
         { 
             if (ModelState.IsValid)
             {
 
                 Account acc = await _context.Account.FirstOrDefaultAsync(x => x.Email == user.Email || x.Phone == user.Phone);
 
+                string role = acc.Role;
                 if (acc == null)
                 {
                     return BadRequest(new RegistrationResponse()
@@ -58,7 +62,15 @@ namespace DotNet.Controllers
                 }
 
                 bool isValidPass = BCrypt.Net.BCrypt.Verify(user.Password, acc.Password);
+                var userClaims = new List<Claim>()
+                        {
+                        new Claim(ClaimTypes.Name, acc.FullName),
+                        new Claim(ClaimTypes.Role, acc.Role),
+                        };
 
+                var identityAcc = new ClaimsIdentity(userClaims, CookieAuthenticationDefaults.AuthenticationScheme);
+                var userPrincipal = new ClaimsPrincipal(identityAcc);
+                await HttpContext.SignInAsync(userPrincipal);
 
                 if (isValidPass == false)
                 {
@@ -72,10 +84,7 @@ namespace DotNet.Controllers
                 }
 
                 var jwtToken = GenerateJwtToken(acc);
-               
-
-
-
+                
                 await UpdateLastAccess(acc);
 
 
@@ -94,8 +103,99 @@ namespace DotNet.Controllers
                 Success = false
             });
         }
+
+        // Log OUT
+        /*
+        [HttpGet("account/logout")]
+        public async Task<ActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync();
+            return NoContent();
+        }
+        */
+
+        [HttpPost("account/create")]
+        [AllowAnonymous]
+        public async Task<IActionResult> CreateAccount([FromForm] AccountRequest data)
+        {
+            string FileDic = "Files";
+            string FilePath = Path.Combine("", FileDic);
+            string AvatarPath = "";
+
+            if (!Directory.Exists(FilePath))
+            {
+                Directory.CreateDirectory(FilePath);
+            }
+
+            if (data.Avatar != null)
+            {
+                if (data.Avatar.Length > 0)
+                {
+                    string RandomFileName = new Random().Next() + "_" + Regex.Replace(data.Avatar.FileName.Trim(), @"[^a-zA-Z0-9.]", "");
+                    string fullFilePath = Path.Combine(FilePath, RandomFileName);
+
+                    using (FileStream fs = System.IO.File.Create(fullFilePath))
+                    {
+                        data.Avatar.CopyTo(fs);
+                    }
+                    AvatarPath = fullFilePath;
+                }
+            }
+
+
+
+            if (ModelState.IsValid)
+            {
+                // AccountRequest accountRe = _mapper.Map<AccountRequest>(data);
+                Account account = _mapper.Map<Account>(data);
+                account.Avatar = AvatarPath;
+                account.Password = BCrypt.Net.BCrypt.HashPassword(data.Password);
+                account.DateCreate = DateTime.Now;
+
+                await _context.Account.AddAsync(account);
+
+                await _context.SaveChangesAsync();
+
+                return Ok(account);
+            }
+
+            return new JsonResult("Something went wrong") { StatusCode = 500 };
+        }
+
+
+        [HttpPatch]
+        [Route("account/user/changepass")]
+        public async Task<ActionResult> ChangePassword([FromForm]ChangePasswordRequest passwordRequest)
+        {
+            if (string.IsNullOrEmpty(passwordRequest.oldPassword) || string.IsNullOrEmpty(passwordRequest.newPassword))
+            {
+                return BadRequest("Password Require");
+            }
+
+            string id = HttpContext.User.FindFirstValue("id");
+            if (id == null)
+            {
+                return BadRequest();
+            }
+
+            Account acc = await _context.Account.FirstOrDefaultAsync(x => x.Id.ToString() == id);
+            bool isValidPass = BCrypt.Net.BCrypt.Verify(passwordRequest.oldPassword,acc.Password);
+
+            if (isValidPass == false)
+            {
+                return BadRequest("Wrong Password");
+            }
+
+            acc.Password = BCrypt.Net.BCrypt.HashPassword(passwordRequest.newPassword);
+
+            await _context.SaveChangesAsync();
+            return Ok("Password Changed");
+
+        }
+
         
-        
+
+        [Authorize(Roles = "User")]
         [HttpGet("account/all")]
         public async Task<IActionResult> GetAccountList([FromQuery]int pageIndex,[FromQuery] int pageSize)
         {
@@ -113,54 +213,6 @@ namespace DotNet.Controllers
             List<Account> items = await _context.Account.ToListAsync();
             List<Account> SortItems = items.OrderBy(x => x.FullName).ToList();
             return Ok(SortItems);
-        }
-        
-
-        [HttpPost("account/create")]
-        [AllowAnonymous]
-        public async Task<IActionResult> CreateAccount([FromForm]AccountRequest data)
-        {
-            string FileDic = "Files";
-            string FilePath = Path.Combine("", FileDic);
-            string AvatarPath = "";
-                      
-            if (!Directory.Exists(FilePath))
-            {
-                Directory.CreateDirectory(FilePath);
-            }
-           
-            if (data.Avatar != null)
-            {
-                if(data.Avatar.Length > 0)
-                {
-                    string RandomFileName = new Random().Next() + "_" + Regex.Replace(data.Avatar.FileName.Trim(), @"[^a-zA-Z0-9.]", "");
-                    string fullFilePath = Path.Combine(FilePath, RandomFileName);
-
-                    using (FileStream fs = System.IO.File.Create(fullFilePath))
-                    {
-                        data.Avatar.CopyTo(fs);
-                    }
-                    AvatarPath = fullFilePath;
-                }
-            }
-    
-            
-           
-            if (ModelState.IsValid)
-            {
-               // AccountRequest accountRe = _mapper.Map<AccountRequest>(data);
-                Account account = _mapper.Map<Account>(data);
-                account.Avatar = AvatarPath;
-                account.Password = BCrypt.Net.BCrypt.HashPassword(data.Password);
-               
-                await _context.Account.AddAsync(account);
-
-                await _context.SaveChangesAsync();
-
-                return Ok(account);
-            }
-
-            return new JsonResult("Something went wrong") { StatusCode = 500 };
         }
 
         private string getFilePath(IFormFile file)
@@ -190,7 +242,6 @@ namespace DotNet.Controllers
             }
             return AvatarPath;
         }
-
         private async Task<IActionResult> UpdateLastAccess(Account account)
         {
             if (account == null)
@@ -203,7 +254,6 @@ namespace DotNet.Controllers
 
             return NoContent();
         }
-
 
         private string GenerateJwtToken(Account user)
         {
@@ -218,7 +268,7 @@ namespace DotNet.Controllers
                     new Claim("Id", user.Id.ToString()),
                     new Claim(JwtRegisteredClaimNames.Email, user.Email),
                     new Claim(JwtRegisteredClaimNames.Sub, user.Phone),
-                    new Claim(ClaimTypes.Role,"Admin","User"),
+                    new Claim(ClaimTypes.Role,user.Role),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
                 }),
                 Expires = DateTime.UtcNow.AddSeconds(30),
@@ -257,31 +307,10 @@ namespace DotNet.Controllers
 
             return Ok(listAccount);
         }
-        [Authorize(Roles = "Admin")]
-        [HttpGet("account/byemail/{email}")]
-        public async Task<IActionResult> GetAccountByEmail(string email)
-        {
-            Account account = await _context.Account.FirstOrDefaultAsync(x => x.Email == email);
-
-            if (account == null)
-                return NotFound();
-
-            return Ok(account);
-        }
-        [Authorize(Roles = "Admin")]
-        [HttpGet("account/byphone/{phone}")]
-        public async Task<IActionResult> GetAccountByPhone(string phone)
-        {
-            Account account = await _context.Account.FirstOrDefaultAsync(x => x.Phone == phone);
-
-            if (account == null)
-                return NotFound();
-
-            return Ok(account);
-        }
+       
         [Authorize(Roles = "Admin")]
         [HttpPut("account/{id}")]
-        public async Task<IActionResult> UpdateItem(int id, Account account)
+        public async Task<IActionResult> UpdateAccount([FromForm]int id, Account account)
         {
             if (id != account.Id)
                 return BadRequest();
