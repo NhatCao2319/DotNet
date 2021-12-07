@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace AccountManagement.Models
@@ -10,6 +11,7 @@ namespace AccountManagement.Models
         [Required]
         public string? FullName { get; set; }
         [Required]
+
         [EmailAddress]
         public string? Email { get; set; }
         [Required]
@@ -18,6 +20,8 @@ namespace AccountManagement.Models
         [Required]
         [JsonIgnore]
         public string Password { get; set; }
+
+        [DefaultValue("User")]
         public string? Role { get; set; }
         public string? Avatar { get; set; }
         [JsonIgnore]

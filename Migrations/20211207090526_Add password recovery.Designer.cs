@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AccountManagement.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    [Migration("20211206055344_init Db")]
-    partial class initDb
+    [Migration("20211207090526_Add password recovery")]
+    partial class Addpasswordrecovery
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

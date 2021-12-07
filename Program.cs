@@ -19,7 +19,9 @@ var tokenValidationParams = new TokenValidationParameters
     ValidateAudience = false,
     ValidateLifetime = true,
     RequireExpirationTime = false
-}; 
+};
+
+
 
 // Add services to the container.
 

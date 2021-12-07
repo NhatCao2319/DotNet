@@ -47,6 +47,27 @@
           "lib/netstandard2.0/Humanizer.dll": {}
         }
       },
+      "Microsoft.AspNet.WebPages.Data/3.2.7": {
+        "type": "package",
+        "compile": {
+          "lib/net45/WebMatrix.Data.dll": {}
+        },
+        "runtime": {
+          "lib/net45/WebMatrix.Data.dll": {}
+        }
+      },
+      "Microsoft.AspNet.WebPages.WebData/3.2.7": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.AspNet.WebPages.Data": "3.2.7"
+        },
+        "compile": {
+          "lib/net45/WebMatrix.WebData.dll": {}
+        },
+        "runtime": {
+          "lib/net45/WebMatrix.WebData.dll": {}
+        }
+      },
       "Microsoft.AspNetCore.Authentication.JwtBearer/6.0.0": {
         "type": "package",
         "dependencies": {
@@ -866,6 +887,12 @@
         "runtime": {
           "lib/netstandard2.0/System.Text.Encodings.Web.dll": {}
         }
+      },
+      "WebMatrix.WebData/2.0.30506": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.AspNet.WebPages.WebData": "2.0.20710"
+        }
       }
     }
   },
@@ -946,6 +973,32 @@
         "lib/netstandard2.0/Humanizer.dll",
         "lib/netstandard2.0/Humanizer.xml",
         "logo.png"
+      ]
+    },
+    "Microsoft.AspNet.WebPages.Data/3.2.7": {
+      "sha512": "wRnglowAe94/SMZpwEYKfXLe6U0yYu4bxMOBPIZyBAH0WE8m8I3wU43p7ZTOCTfOLWHalJ3cvN73Y23BBZqPbg==",
+      "type": "package",
+      "path": "microsoft.aspnet.webpages.data/3.2.7",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net45/WebMatrix.Data.dll",
+        "lib/net45/WebMatrix.Data.xml",
+        "microsoft.aspnet.webpages.data.3.2.7.nupkg.sha512",
+        "microsoft.aspnet.webpages.data.nuspec"
+      ]
+    },
+    "Microsoft.AspNet.WebPages.WebData/3.2.7": {
+      "sha512": "AxvuTZdF1Z216x0ErUw/84QNsf42PuSFr0V3tUAzm8v0tVdg2SYTgRRxF9TgTRfkG3RA1Om5dmlyS3x3/MYotQ==",
+      "type": "package",
+      "path": "microsoft.aspnet.webpages.webdata/3.2.7",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net45/WebMatrix.WebData.dll",
+        "lib/net45/WebMatrix.WebData.xml",
+        "microsoft.aspnet.webpages.webdata.3.2.7.nupkg.sha512",
+        "microsoft.aspnet.webpages.webdata.nuspec"
       ]
     },
     "Microsoft.AspNetCore.Authentication.JwtBearer/6.0.0": {
@@ -2356,19 +2409,32 @@
         "useSharedDesignerContext.txt",
         "version.txt"
       ]
+    },
+    "WebMatrix.WebData/2.0.30506": {
+      "sha512": "kDz6OjnVNm/asletyqpHmb0y/56KduvxWhi6KJdAgnT45LZPu6IUETXNISA1icfoRwBWrUirQxAZw6JwhYrqoQ==",
+      "type": "package",
+      "path": "webmatrix.webdata/2.0.30506",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "webmatrix.webdata.2.0.30506.nupkg.sha512",
+        "webmatrix.webdata.nuspec"
+      ]
     }
   },
   "projectFileDependencyGroups": {
     "net6.0": [
       "AutoMapper.Extensions.Microsoft.DependencyInjection >= 8.1.1",
-      "BCrypt.Net-Next >= 4.0.2",
+      "Bcrypt.Net-Next >= 4.0.2",
+      "Microsoft.AspNet.WebPages.WebData >= 3.2.7",
       "Microsoft.AspNetCore.Authentication.JwtBearer >= 6.0.0",
       "Microsoft.AspNetCore.Hosting >= 2.2.7",
       "Microsoft.AspNetCore.Identity.EntityFrameworkCore >= 6.0.0",
       "Microsoft.AspNetCore.Identity.UI >= 6.0.0",
       "Microsoft.EntityFrameworkCore.Tools >= 6.0.0",
       "Pomelo.EntityFrameworkCore.MySql >= 6.0.0",
-      "Swashbuckle.AspNetCore >= 6.2.3"
+      "Swashbuckle.AspNetCore >= 6.2.3",
+      "WebMatrix.WebData >= 2.0.30506"
     ]
   },
   "packageFolders": {
@@ -2414,9 +2480,13 @@
             "target": "Package",
             "version": "[8.1.1, )"
           },
-          "BCrypt.Net-Next": {
+          "Bcrypt.Net-Next": {
             "target": "Package",
             "version": "[4.0.2, )"
+          },
+          "Microsoft.AspNet.WebPages.WebData": {
+            "target": "Package",
+            "version": "[3.2.7, )"
           },
           "Microsoft.AspNetCore.Authentication.JwtBearer": {
             "target": "Package",
@@ -2447,6 +2517,10 @@
           "Swashbuckle.AspNetCore": {
             "target": "Package",
             "version": "[6.2.3, )"
+          },
+          "WebMatrix.WebData": {
+            "target": "Package",
+            "version": "[2.0.30506, )"
           }
         },
         "imports": [
@@ -2470,5 +2544,27 @@
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.100\\RuntimeIdentifierGraph.json"
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "NU1701",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'Microsoft.AspNet.WebPages.Data 3.2.7' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8' instead of the project target framework 'net6.0'. This package may not be fully compatible with your project.",
+      "libraryId": "Microsoft.AspNet.WebPages.Data",
+      "targetGraphs": [
+        "net6.0"
+      ]
+    },
+    {
+      "code": "NU1701",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'Microsoft.AspNet.WebPages.WebData 3.2.7' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8' instead of the project target framework 'net6.0'. This package may not be fully compatible with your project.",
+      "libraryId": "Microsoft.AspNet.WebPages.WebData",
+      "targetGraphs": [
+        "net6.0"
+      ]
+    }
+  ]
 }

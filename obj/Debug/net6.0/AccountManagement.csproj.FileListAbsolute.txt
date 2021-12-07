@@ -177,3 +177,5 @@ D:\Dotnet\Nguyen\AccountManager\obj\Debug\net6.0\AccountManagement.genruntimecon
 D:\Dotnet\Nguyen\AccountManager\bin\Debug\net6.0\AutoMapper.dll
 D:\Dotnet\Nguyen\AccountManager\bin\Debug\net6.0\AutoMapper.Extensions.Microsoft.DependencyInjection.dll
 D:\Dotnet\Nguyen\AccountManager\bin\Debug\net6.0\BCrypt.Net-Next.dll
+D:\Dotnet\Nguyen\AccountManager\bin\Debug\net6.0\WebMatrix.Data.dll
+D:\Dotnet\Nguyen\AccountManager\bin\Debug\net6.0\WebMatrix.WebData.dll

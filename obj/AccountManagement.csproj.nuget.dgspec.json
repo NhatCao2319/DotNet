@@ -48,6 +48,10 @@
               "target": "Package",
               "version": "[4.0.2, )"
             },
+            "Microsoft.AspNet.WebPages.WebData": {
+              "target": "Package",
+              "version": "[3.2.7, )"
+            },
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
               "version": "[6.0.0, )"
@@ -77,6 +81,10 @@
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.2.3, )"
+            },
+            "WebMatrix.WebData": {
+              "target": "Package",
+              "version": "[2.0.30506, )"
             }
           },
           "imports": [

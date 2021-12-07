@@ -20,18 +20,24 @@ using AccountManagement;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 using AccountManagement.Models.DTOs.Requests;
+using System.Net.Mail;
+using System.Net;
+using WebMatrix.WebData;
+using System.Web;
 
 namespace DotNet.Controllers
 {
     
     [ApiController]
-    
 
     public class AccountController : ControllerBase
     {
         private readonly IMapper _mapper;
         private readonly JwtConfig _jwtConfig;
         private readonly ApiDbContext _context;
+        private readonly ILogger<AccountController> logger;
+        protected static PasswordRecoveryModel passRequest = new PasswordRecoveryModel();
+
         public AccountController(ApiDbContext context, IOptionsMonitor<JwtConfig> optionsMonitor, IMapper mapper)
         {
             _context = context;
@@ -39,6 +45,7 @@ namespace DotNet.Controllers
             _mapper = mapper;
         }
         
+        // LOG IN 
         [HttpPost]
         [Route("Login")]
         [AllowAnonymous]
@@ -104,20 +111,17 @@ namespace DotNet.Controllers
             });
         }
 
-        // Log OUT
-        /*
-        [HttpGet("account/logout")]
-        public async Task<ActionResult> Logout()
-        {
-            await HttpContext.SignOutAsync();
-            return NoContent();
-        }
-        */
-
+        // CREATE ACCOUNT
         [HttpPost("account/create")]
         [AllowAnonymous]
         public async Task<IActionResult> CreateAccount([FromForm] AccountRequest data)
         {
+            Account acc = await _context.Account.FirstOrDefaultAsync(x => x.Email == data.Email);
+            if(acc!= null)
+            {
+                return BadRequest("Email already exist");
+            }
+
             string FileDic = "Files";
             string FilePath = Path.Combine("", FileDic);
             string AvatarPath = "";
@@ -141,14 +145,12 @@ namespace DotNet.Controllers
                     AvatarPath = fullFilePath;
                 }
             }
-
-
-
             if (ModelState.IsValid)
             {
-                // AccountRequest accountRe = _mapper.Map<AccountRequest>(data);
+               
                 Account account = _mapper.Map<Account>(data);
                 account.Avatar = AvatarPath;
+                account.Role = "User";
                 account.Password = BCrypt.Net.BCrypt.HashPassword(data.Password);
                 account.DateCreate = DateTime.Now;
 
@@ -162,10 +164,89 @@ namespace DotNet.Controllers
             return new JsonResult("Something went wrong") { StatusCode = 500 };
         }
 
+        // VALIDATE REQUEST FORGOT PASSWORD
+        [HttpPost]
+        [AllowAnonymous]
+        [Route("account/recoverypassword")]
+        public async Task<IActionResult> ResetPassword([FromForm] AccountRecovery accReco)
+        {
+            if (accReco.Password != accReco.ConfirmPassword)
+            {
+                return BadRequest("Password confirm must same to password");
+            }
 
+            if (DateTime.Compare(passRequest.ExpiredTime, DateTime.Now) > 0)
+            {
+                if (accReco.OTPCode != passRequest.Code.ToString())
+                {
+                    return BadRequest("Wrong OTP Code");
+                }
+
+                Account account = await _context.Account.FirstOrDefaultAsync(x => x.Email == passRequest.Email);
+                if (account == null)
+                {
+                    return BadRequest("Account not exist");
+                }
+
+                account.Password = BCrypt.Net.BCrypt.HashPassword(accReco.Password);
+                await _context.SaveChangesAsync();
+                return Ok("Update Password Success");
+            }
+            else
+            {
+                return BadRequest("Code Expired");
+            }           
+        }
+
+        // SEND REQUEST FORGOT PASSWORD
+        [HttpPost]
+        [Route("account/forgotpassword")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SendForgotPassword([FromForm] string Email)
+        {
+            if (ModelState.IsValid)
+            {
+                Account account = await _context.Account.FirstOrDefaultAsync(x => x.Email == Email);
+                if(account == null)
+                {
+                    return BadRequest("Account does not exist");
+                }
+
+                var rand = new Random();
+                var uid = rand.Next(100000, 1000000);
+                var expiredCode = DateTime.Now.AddSeconds(30);
+
+              
+                using (SmtpClient client = new SmtpClient("smtp.gmail.com"))
+                {
+                    client.Port = 587;
+                    client.Credentials = new NetworkCredential("thoixuongnguyen@gmail.com", "7G1j9m324567");
+                    client.EnableSsl = true;
+                    await SendMail("thoixuongnguyen@gmail.com",
+                        account.Email,
+                        "Reset Password by Code",
+                      $"Your password reset code : {uid}" +
+                      $" - Your code will expired in 30 seconds",
+                        client);
+                };
+                passRequest.Code = uid.ToString();
+                passRequest.Email = account.Email;
+                passRequest.ExpiredTime = expiredCode;
+
+                return Ok($"The request has sent to your email - {passRequest.Code}-{expiredCode}-{DateTime.Now}");
+
+            }
+            else
+            {
+                return BadRequest();
+            }
+            
+        }
+
+        // Change Password By User
         [HttpPatch]
         [Route("account/user/changepass")]
-        public async Task<ActionResult> ChangePassword([FromForm]ChangePasswordRequest passwordRequest)
+        public async Task<ActionResult> ChangePassword([FromForm] ChangePasswordRequest passwordRequest)
         {
             if (string.IsNullOrEmpty(passwordRequest.oldPassword) || string.IsNullOrEmpty(passwordRequest.newPassword))
             {
@@ -179,7 +260,7 @@ namespace DotNet.Controllers
             }
 
             Account acc = await _context.Account.FirstOrDefaultAsync(x => x.Id.ToString() == id);
-            bool isValidPass = BCrypt.Net.BCrypt.Verify(passwordRequest.oldPassword,acc.Password);
+            bool isValidPass = BCrypt.Net.BCrypt.Verify(passwordRequest.oldPassword, acc.Password);
 
             if (isValidPass == false)
             {
@@ -193,7 +274,58 @@ namespace DotNet.Controllers
 
         }
 
-        
+        // UPDATE ROLE BY ADMIN
+        [Authorize(Roles = "Admin")]
+        [HttpPatch("account/setrole")]
+        public async Task<IActionResult> GrantPermission([FromForm] string id, [FromForm] string role)
+        {
+            Account account = await _context.Account.FirstOrDefaultAsync(x => x.Id.ToString() == id);
+            account.Role = role;
+            await _context.SaveChangesAsync();
+            return Ok("Role Updated");
+        }
+
+        // UPDATE AVATAR
+        [Authorize(Roles = "Admin,User")]
+        [HttpPatch("account/update/avatar")]
+        public async Task<IActionResult> UpdateAvatar(IFormFile file)
+        {
+            // get value from header
+            string id = HttpContext.User.FindFirstValue("Id");
+            Account acc = await _context.Account.FirstOrDefaultAsync(x => x.Id.ToString() == id);
+            acc.Avatar = getFilePath(file);
+            await _context.SaveChangesAsync();
+
+            return Ok(acc);
+
+        }
+
+        // Send Email Method
+        private async Task<bool> SendMail(string from,string to,string subject,string body, SmtpClient client)
+        {
+            MailMessage mail = new MailMessage(
+                   from: from,
+                   to: to,
+                   subject: subject,
+                   body: body
+                   );
+
+            mail.BodyEncoding = System.Text.Encoding.UTF8;
+            mail.SubjectEncoding = System.Text.Encoding.UTF8;
+            mail.IsBodyHtml = true;
+            mail.ReplyToList.Add(new MailAddress(from));
+            mail.Sender = new MailAddress(from);
+            try
+            {
+                await client.SendMailAsync(mail);
+                return true;
+            }
+            catch(Exception ex)
+            {
+                return false;
+            }
+        }
+
 
         [Authorize(Roles = "User")]
         [HttpGet("account/all")]
@@ -205,6 +337,8 @@ namespace DotNet.Controllers
             return Ok(items);
         }
 
+
+
         //Sort List Account
         [Authorize(Roles = "Admin")]
         [HttpGet("account/sort")]
@@ -214,6 +348,7 @@ namespace DotNet.Controllers
             List<Account> SortItems = items.OrderBy(x => x.FullName).ToList();
             return Ok(SortItems);
         }
+
 
         private string getFilePath(IFormFile file)
         {
@@ -280,7 +415,31 @@ namespace DotNet.Controllers
 
             return jwtToken;
         }
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+
+        private string GeneratePasswordRecoveryToken(string email)
+        {
+            var jwtTokenHandler = new JwtSecurityTokenHandler();
+
+            var key = Encoding.ASCII.GetBytes(_jwtConfig.Secret);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {                 
+                    new Claim(ClaimTypes.Email,email),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                }),
+                Expires = DateTime.UtcNow.AddSeconds(30),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = jwtTokenHandler.CreateToken(tokenDescriptor);
+            var jwtToken = jwtTokenHandler.WriteToken(token);
+
+            return jwtToken;
+        }
+        
+        // GET ACCOUNT BY ID WITH ADMIN ROLE
         [Authorize(Roles = "Admin")]
         [HttpGet("account/{id}")]
         public async Task<IActionResult> GetAccount(int id)
@@ -292,6 +451,8 @@ namespace DotNet.Controllers
 
             return Ok(acc);
         }
+
+        // SEARCH BY KEY WITH ADMIN ROLE
         [Authorize(Roles = "Admin")]
         [HttpGet("account/search/{key}")]
         public async Task<IActionResult> GetAccountByName(string key)
@@ -307,18 +468,32 @@ namespace DotNet.Controllers
 
             return Ok(listAccount);
         }
-       
-        [Authorize(Roles = "Admin")]
-        [HttpPut("account/{id}")]
-        public async Task<IActionResult> UpdateAccount([FromForm]int id, Account account)
-        {
-            if (id != account.Id)
-                return BadRequest();
 
-            Account existAccount = await _context.Account.FirstOrDefaultAsync(x => x.Id == id);
+        // FILTER ACCOUNT BY LAST ACCESS TIME
+        [Authorize(Roles = "Admin")]
+        [HttpGet("account/filter")]
+        public async Task<IActionResult> GetFilterByLastAccess([FromQuery] DateTime timemin, [FromQuery] DateTime timemax)
+        {
+            List<Account> listAccount = await _context.Account.ToListAsync();
+
+            listAccount = listAccount.Where(x => (x.LastAccess >= timemin && x.LastAccess <= timemax)).ToList();
+            return Ok(listAccount);
+
+        }
+
+        // UPDATE ACCOUNT WITH ADMIN ROLE
+        [Authorize(Roles = "Admin")]
+        [HttpPut("account/editaccount")]
+        public async Task<IActionResult> UpdateAccount([FromForm] Account account)
+        {
+            if(account.Id == null)
+            {
+                return BadRequest();
+            }
+            Account existAccount = await _context.Account.FirstOrDefaultAsync(x => x.Id == account.Id);
 
             if (existAccount == null)
-                return NotFound();
+                return BadRequest("Account not exist");
 
             existAccount.FullName = account.FullName;
             existAccount.Email = account.Email;
@@ -331,6 +506,8 @@ namespace DotNet.Controllers
 
             return Ok(existAccount);
         }
+
+        // DELETE ACCOUNT BY ADMIN ROLE
         [Authorize(Roles = "Admin")]
         [HttpDelete("account/{id}")]
         public async Task<IActionResult> DeleteItem(int id)
@@ -345,31 +522,6 @@ namespace DotNet.Controllers
 
             return Ok(existAccount);
         }
-
-        [Authorize(Roles = "Admin,User")]
-        [HttpPatch("account/update/avatar")]
-        public async Task<IActionResult> UpdateAvatar(IFormFile file)
-        {
-            // get value from header
-            string id = HttpContext.User.FindFirstValue("Id");
-           Account acc = await _context.Account.FirstOrDefaultAsync(x => x.Id.ToString() == id);
-           acc.Avatar = getFilePath(file);
-           await _context.SaveChangesAsync();
-
-            return Ok(acc);
-
-        }
-
-        [Authorize(Roles = "Admin")]
-        [HttpGet("account/filter")]
-        public async Task<IActionResult> GetFilterByLastAccess([FromQuery]DateTime timemin,[FromQuery]DateTime timemax)
-        {
-            List<Account> listAccount = await _context.Account.ToListAsync();
-         
-            listAccount = listAccount.Where(x => (x.LastAccess >= timemin && x.LastAccess <= timemax)).ToList();
-            return Ok(listAccount);
-         
-        }
-        
+    
     }
 }
