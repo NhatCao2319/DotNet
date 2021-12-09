@@ -58,6 +58,26 @@ namespace AccountManagement.Migrations
                     b.ToTable("Account");
                 });
 
+            modelBuilder.Entity("AccountManagement.Models.PasswordRecoveryModel", b =>
+                {
+                    b.Property<string>("Email")
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("ExpiredTime")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Email");
+
+                    b.ToTable("PasswordRecoveryModels");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")

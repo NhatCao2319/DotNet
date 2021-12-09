@@ -36,7 +36,7 @@ namespace DotNet.Controllers
         private readonly JwtConfig _jwtConfig;
         private readonly ApiDbContext _context;
         private readonly ILogger<AccountController> logger;
-        protected static PasswordRecoveryModel passRequest = new PasswordRecoveryModel();
+      
 
         public AccountController(ApiDbContext context, IOptionsMonitor<JwtConfig> optionsMonitor, IMapper mapper)
         {
@@ -56,7 +56,6 @@ namespace DotNet.Controllers
 
                 Account acc = await _context.Account.FirstOrDefaultAsync(x => x.Email == user.Email || x.Phone == user.Phone);
 
-                string role = acc.Role;
                 if (acc == null)
                 {
                     return BadRequest(new RegistrationResponse()
@@ -111,6 +110,7 @@ namespace DotNet.Controllers
             });
         }
 
+
         // CREATE ACCOUNT
         [HttpPost("account/create")]
         [AllowAnonymous]
@@ -164,39 +164,6 @@ namespace DotNet.Controllers
             return new JsonResult("Something went wrong") { StatusCode = 500 };
         }
 
-        // VALIDATE REQUEST FORGOT PASSWORD
-        [HttpPost]
-        [AllowAnonymous]
-        [Route("account/recoverypassword")]
-        public async Task<IActionResult> ResetPassword([FromForm] AccountRecovery accReco)
-        {
-            if (accReco.Password != accReco.ConfirmPassword)
-            {
-                return BadRequest("Password confirm must same to password");
-            }
-
-            if (DateTime.Compare(passRequest.ExpiredTime, DateTime.Now) > 0)
-            {
-                if (accReco.OTPCode != passRequest.Code.ToString())
-                {
-                    return BadRequest("Wrong OTP Code");
-                }
-
-                Account account = await _context.Account.FirstOrDefaultAsync(x => x.Email == passRequest.Email);
-                if (account == null)
-                {
-                    return BadRequest("Account not exist");
-                }
-
-                account.Password = BCrypt.Net.BCrypt.HashPassword(accReco.Password);
-                await _context.SaveChangesAsync();
-                return Ok("Update Password Success");
-            }
-            else
-            {
-                return BadRequest("Code Expired");
-            }           
-        }
 
         // SEND REQUEST FORGOT PASSWORD
         [HttpPost]
@@ -207,16 +174,16 @@ namespace DotNet.Controllers
             if (ModelState.IsValid)
             {
                 Account account = await _context.Account.FirstOrDefaultAsync(x => x.Email == Email);
-                if(account == null)
+                if (account == null)
                 {
                     return BadRequest("Account does not exist");
                 }
 
                 var rand = new Random();
                 var uid = rand.Next(100000, 1000000);
-                var expiredCode = DateTime.Now.AddSeconds(30);
+                var expiredCode = DateTime.Now.AddSeconds(80);
 
-              
+
                 using (SmtpClient client = new SmtpClient("smtp.gmail.com"))
                 {
                     client.Port = 587;
@@ -226,21 +193,75 @@ namespace DotNet.Controllers
                         account.Email,
                         "Reset Password by Code",
                       $"Your password reset code : {uid}" +
-                      $" - Your code will expired in 30 seconds",
+                      $" - Your code will expired in 80 seconds",
                         client);
                 };
-                passRequest.Code = uid.ToString();
-                passRequest.Email = account.Email;
-                passRequest.ExpiredTime = expiredCode;
+                var k =  _context.PasswordRecoveryModels.FirstOrDefault(x => x.Email == Email);
+                if (k == null)
+                {
+                    k.Email = Email;
+                    k.Code = uid.ToString();
+                    k.ExpiredTime = expiredCode;
+                    k.status = 0;
 
-                return Ok($"The request has sent to your email - {passRequest.Code}-{expiredCode}-{DateTime.Now}");
+                    await _context.PasswordRecoveryModels.AddAsync(k);
+                }
+                else
+                {
+                    k.Email = Email;
+                    k.Code = uid.ToString();
+                    k.ExpiredTime = expiredCode;
+                    k.status = 0;
+                    _context.PasswordRecoveryModels.Update(k);
+                }     
+                
+                await _context.SaveChangesAsync();
+
+                return Ok($"The request has sent to your email - {k.Code}-{expiredCode}-{DateTime.Now}");
 
             }
             else
             {
                 return BadRequest();
             }
-            
+
+        }
+
+        // Valiedate request recovery password
+        [HttpPost]
+        [AllowAnonymous]
+        [Route("validaterecoverypasss")]
+        public async Task<IActionResult> ResetPassword([FromForm] AccountRecovery accReco)
+        {
+            if (accReco.Password != accReco.ConfirmPassword) return BadRequest("Password confirm must same to password");
+
+            var passModel = await _context.PasswordRecoveryModels.FirstOrDefaultAsync(x => x.Code == accReco.OTPCode);
+            if (passModel == null) return BadRequest("Wrong Code");
+
+            if (accReco.Email != passModel.Email) return BadRequest("Your email and otp code must valid");
+
+            var acc = await _context.Account.FirstOrDefaultAsync(x => x.Email == passModel.Email);
+
+            if (acc == null) return BadRequest("Email not exist");
+
+            if (passModel.Code == accReco.OTPCode) {
+                if (passModel.status == 1) return BadRequest("This code is already used");
+
+                if (DateTime.Compare(passModel.ExpiredTime, DateTime.Now) > 0)
+                {
+                    acc.Password = BCrypt.Net.BCrypt.HashPassword(accReco.Password);
+                    passModel.status = 1;
+                    await _context.SaveChangesAsync();
+                    return Ok("Update Password Success");
+                }
+                else
+                {
+                    return BadRequest("Code Expired");
+                }
+            }
+            return BadRequest("Failed");
+
+
         }
 
         // Change Password By User
@@ -416,28 +437,6 @@ namespace DotNet.Controllers
             return jwtToken;
         }
 
-        private string GeneratePasswordRecoveryToken(string email)
-        {
-            var jwtTokenHandler = new JwtSecurityTokenHandler();
-
-            var key = Encoding.ASCII.GetBytes(_jwtConfig.Secret);
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new[]
-                {                 
-                    new Claim(ClaimTypes.Email,email),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-                }),
-                Expires = DateTime.UtcNow.AddSeconds(30),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var token = jwtTokenHandler.CreateToken(tokenDescriptor);
-            var jwtToken = jwtTokenHandler.WriteToken(token);
-
-            return jwtToken;
-        }
         
         // GET ACCOUNT BY ID WITH ADMIN ROLE
         [Authorize(Roles = "Admin")]
@@ -522,6 +521,25 @@ namespace DotNet.Controllers
 
             return Ok(existAccount);
         }
-    
+
+
+        // DELETE MULTI ACCOUNT BY ADMIN ROLE
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("account/multidelete")]
+        public async Task<IActionResult> DeleteMultiItem([FromForm]List<int> id)
+        {
+            var assets = await _context.Account.Where(x => id.Contains(x.Id)).ToArrayAsync();
+            if(assets == null)
+            {
+                return BadRequest("Account not exist");
+            }
+
+            _context.Account.RemoveRange(assets);
+            var result = await _context.SaveChangesAsync();
+            if (result == 0) return BadRequest("Detele error");
+
+            return Ok("Deleted");
+        }
+
     }
 }

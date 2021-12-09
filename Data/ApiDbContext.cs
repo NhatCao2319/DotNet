@@ -7,8 +7,7 @@ namespace AccountManagement.Data
     public class ApiDbContext : IdentityDbContext
     {
         public virtual DbSet<Account> Account { get; set; }
-        public virtual DbSet<PasswordRecoveryModel> PasswordRecovery { get; set; }
-
+        public virtual DbSet<PasswordRecoveryModel> PasswordRecoveryModels { get; set; }
         public ApiDbContext(DbContextOptions<ApiDbContext> options)
             : base(options)
         {

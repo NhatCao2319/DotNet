@@ -6,6 +6,7 @@ namespace AccountManagement.Models
 {
     public class Account
     {
+        [Key]
         [JsonIgnore]
         public int Id { get; set; }
         [Required]
